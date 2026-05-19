@@ -2,8 +2,9 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate
 from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier  # ← YENİ
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score, roc_auc_score,
     confusion_matrix, classification_report, make_scorer
@@ -38,14 +39,14 @@ def evaluate_model(y_true, y_pred, y_prob, model_name=""):
 def run_classification_with_cv(data_path, output_dir="results"):
     """
     5-Fold Stratified CV ile sınıflandırma eğitimi
-    SVM, XGBoost ve Random Forest modellerini karşılaştırır
+    SVM, XGBoost, Random Forest, LightGBM modellerini ve Voting Ensemble'ı karşılaştırır
     """
     
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
     print("=" * 70)
-    print("BOŞANMA TAHMİN SİSTEMİ - İYİLEŞTİRİLMİŞ PIPELINE")
+    print("BOŞANMA TAHMİN SİSTEMİ - İYİLEŞTİRİLMİŞ PIPELINE (5 MODEL + ENSEMBLE)")
     print("=" * 70)
     
     # Veri yükleme
@@ -76,13 +77,41 @@ def run_classification_with_cv(data_path, output_dir="results"):
     )
     print(f"✓ Train: {len(X_train_all)} | Test: {len(X_test_all)}")
     
-    # Modeller
+    # ===== MODELLER - YENİ: LightGBM ve Voting Ensemble =====
     print("\n[3/5] Modeller tanımlanıyor...")
+    
+    # Bireysel modeller
+    svm_model = SVC(kernel='rbf', C=1.0, gamma='scale', probability=True, random_state=42)
+    xgb_model = XGBClassifier(max_depth=5, learning_rate=0.1, n_estimators=100, random_state=42, eval_metric='logloss')
+    rf_model = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
+    lgb_model = LGBMClassifier(
+        n_estimators=100,
+        max_depth=7,
+        learning_rate=0.1,
+        num_leaves=31,
+        random_state=42,
+        verbose=-1
+    )
+    
+    # Voting Ensemble - tüm modelleri birleştir
+    voting_model = VotingClassifier(
+        estimators=[
+            ('svm', SVC(kernel='rbf', C=1.0, gamma='scale', probability=True, random_state=42)),
+            ('xgb', XGBClassifier(max_depth=5, learning_rate=0.1, n_estimators=100, random_state=42, eval_metric='logloss')),
+            ('rf', RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)),
+            ('lgb', LGBMClassifier(n_estimators=100, max_depth=7, learning_rate=0.1, num_leaves=31, random_state=42, verbose=-1))
+        ],
+        voting='soft'
+    )
+    
     models = {
-        'SVM': SVC(kernel='rbf', C=1.0, gamma='scale', probability=True, random_state=42),
-        'XGBoost': XGBClassifier(max_depth=5, learning_rate=0.1, n_estimators=100, random_state=42, eval_metric='logloss'),
-        'Random Forest': RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
+        'SVM': svm_model,
+        'XGBoost': xgb_model,
+        'Random Forest': rf_model,
+        'LightGBM': lgb_model,
+        'Voting Ensemble': voting_model
     }
+    
     print(f"✓ {len(models)} model hazır: {list(models.keys())}")
     
     # Sonuçları sakla
@@ -192,7 +221,7 @@ def run_classification_with_cv(data_path, output_dir="results"):
     
     # Özet tablosu
     print("\n" + "=" * 70)
-    print("ÖZET: TEST SETİ ACCURACY KARŞILAŞTIRMASI")
+    print("ÖZET: TEST SETİ ACCURACY KARŞILAŞTIRMASI (5 MODEL + ENSEMBLE)")
     print("=" * 70)
     summary_df = pd.DataFrame({
         model: [final_results[f"{model} (54 Soru)"]["Accuracy"],

@@ -6,3 +6,4 @@ mlxtend>=0.20.0
 matplotlib>=3.4.0
 seaborn>=0.11.0
 networkx>=2.6.0
+lightgbm
