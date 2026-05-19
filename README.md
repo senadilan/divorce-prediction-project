@@ -1,4 +1,4 @@
-# Evlilik Sağlamlığı Tahmin Sistemi - Psikolojik Öznitelik Seçimi Yöntemi
+# Evlilik Sağlamlığı Tahmin Sistemi - Psikolojik Öznitelik Seçimi Yöntemi FUCKKK
 
 ## 📋 Proje Özeti
 
