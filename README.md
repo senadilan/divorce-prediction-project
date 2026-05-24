@@ -1,6 +1,8 @@
 
 
 💔 AI-Driven Divorce Prediction: A Hybrid Data Mining Approach
+
+
 📌 Project Overview
 This repository contains a comprehensive data mining and machine learning pipeline designed to predict marital stability and divorce risks based on psychological behavioral patterns.
 
